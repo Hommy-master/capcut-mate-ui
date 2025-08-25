@@ -1,0 +1,132 @@
+name: Build Application
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ['3.11']
+        include:
+          - os: ubuntu-latest
+            artifact-name: linux-package
+            install-qt-target: desktop
+          - os: macos-latest
+            artifact-name: macos-package
+            install-qt-target: desktop
+          - os: windows-latest
+            artifact-name: windows-package
+            install-qt-target: desktop
+            qt-arch: win64_msvc2019_64
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      run: |
+        pip install uv
+
+    - name: Install dependencies with uv
+      run: |
+        uv sync --all-groups --frozen
+
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '5.15.2'
+        target: ${{ matrix.install-qt-target }}
+        arch: ${{ matrix.qt-arch }}
+
+    - name: Test application
+      run: |
+        python main.py --help
+
+    - name: Package application
+      env:
+        OS: ${{ matrix.os }}
+      run: |
+        echo "Packaging for $OS"
+        if [ "$OS" == "Windows" ]; then
+          # Windows 打包
+          uv run pyinstaller --name=CapCutMateUI \
+            --windowed \
+            --onefile \
+            --icon=assets/icon.ico \
+            main.py
+        elif [ "$OS" == "macOS" ]; then
+          # macOS 打包
+          uv run pyinstaller --name=CapCutMateUI \
+            --windowed \
+            --osx-bundle-identifier="com.yourcompany.capcutmateui" \
+            --icon=assets/icon.icns \
+            main.py
+        else
+          # Linux 打包
+          uv run pyinstaller --name=CapCutMateUI \
+            --windowed \
+            --onefile \
+            main.py
+        fi
+
+    - name: Additional processing for Windows
+      if: matrix.os == 'windows-latest'
+      run: |
+        # 使用 windeployqt 收集 Qt 依赖
+        windeployqt dist/CapCutMateUI.exe
+
+    - name: Additional processing for macOS
+      if: matrix.os == 'macos-latest'
+      run: |
+        # 处理 macOS 应用包
+        hdiutil create -volname "CapCutMateUI" -srcfolder dist/CapCutMateUI.app -ov -format UDZO dist/CapCutMateUI.dmg
+
+    - name: Create archive
+      run: |
+        if [ "${{ matrix.os }}" == "windows-latest" ]; then
+          cd dist && zip -r ../CapCutMateUI-${{ github.sha }}.zip ./*
+        elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+          cd dist && zip -r ../CapCutMateUI-${{ github.sha }}.dmg ./*
+        else
+          cd dist && tar -czvf ../CapCutMateUI-${{ github.sha }}.tar.gz ./*
+        fi
+
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.artifact-name }}-${{ github.sha }}
+        path: |
+          CapCutMateUI-${{ github.sha }}.*
+          dist/
+
+  create-release:
+    name: Create Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          artifacts/**/*
+        draft: false
+        prerelease: false
