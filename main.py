@@ -1,46 +1,23 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-跨平台最小 PyQt5 窗口示例
-支持 Windows / Linux / macOS
-运行：
-    python main.py
-"""
 import sys
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QLabel, QVBoxLayout, QWidget, QPushButton
+from PySide6.QtWidgets import QApplication, QLabel, QWidget
+from PySide6.QtGui import QIcon
 
 
-class SimpleWindow(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setWindowTitle("PyQt5 跨平台示例")
-        self.resize(360, 240)
+def main():
+    app = QApplication(sys.argv)  # 创建应用实例
+    window = QWidget()           # 创建主窗口
+    window.setWindowTitle("剪映小助手")
+    window.resize(800, 600)
 
-        # 主布局
-        layout = QVBoxLayout(self)
+    # 设置窗口图标
+    icon = QIcon("res/logo.png")  # 图标放在项目根目录
+    window.setWindowIcon(icon)
 
-        # 标签
-        self.label = QLabel("你好，PyQt5！", self)
-        self.label.setAlignment(Qt.AlignCenter)
+    label = QLabel("欢迎使用剪映小助手！", window)
+    label.setGeometry(50, 50, 200, 30)  # 设置标签位置和大小
 
-        # 按钮
-        self.button = QPushButton("点我", self)
-        self.button.clicked.connect(self.on_click)
-
-        layout.addWidget(self.label)
-        layout.addWidget(self.button)
-
-    def on_click(self):
-        self.label.setText("按钮被点了！")
-
+    window.show()               # 显示窗口
+    sys.exit(app.exec())        # 启动事件循环
 
 if __name__ == "__main__":
-    # 适配高清屏（可选）
-    QApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
-    QApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
-
-    app = QApplication(sys.argv)
-    w = SimpleWindow()
-    w.show()
-    sys.exit(app.exec_())
+    main()
