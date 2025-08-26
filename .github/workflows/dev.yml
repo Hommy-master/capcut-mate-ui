@@ -49,8 +49,7 @@ jobs:
 
     - name: 压缩文件
       run: |
-        cd dist && tar -czvf ../dist.tar.gz ./* && cd -
-        cd build && tar -czvf ../build.tar.gz ./* && cd -
+        cd dist && tar -czvf ../${{ matrix.os }}.tar.gz ./* && cd -
         ls 
     
     - name: 上传文件
@@ -60,7 +59,7 @@ jobs:
       with:
         tag_name: ${{ github.ref_name }}
         name: Release ${{ github.ref_name }}
-        files: dist.tar.gz
+        files: ${{ matrix.os }}.tar.gz
         overwrite: true
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
