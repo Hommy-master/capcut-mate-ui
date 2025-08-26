@@ -47,12 +47,19 @@ jobs:
       run: |
         uv run pyinstaller --onefile main.py
 
-    - name: 上传文件
-      uses: actions/upload-artifact@v4  # 更新为 v4 版本
+    - name: 压缩文件
+      run: |
+        cd dist && tar -czvf ../dist.tar.gz ./* && cd -
+        cd build && tar -czvf ../build.tar.gz ./* && cd -
+    
+    # 使用社区 Action 支持覆盖
+    - name: Create Release and Upload Asset
+      uses: softprops/action-gh-release@v1
       with:
-        name: ${{ matrix.artifact-name }}-${{ github.sha }}
-        path: |
-          dist/
-          build/
-        retention-days: ${{ env.ARTIFACT_RETENTION_DAYS }}
-        if-no-files-found: error  # 可选：当没有找到文件时的行为，可选 warn, error, ignore:cite[2]
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
+        files: dist.tar.gz build.tar.gz
+        overwrite: true  # 覆盖已存在的Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  
