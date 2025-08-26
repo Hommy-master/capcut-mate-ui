@@ -51,7 +51,7 @@ jobs:
       run: |
         cd dist && tar -czvf ../dist.tar.gz ./* && cd -
         cd build && tar -czvf ../build.tar.gz ./* && cd -
-        ls -lha
+        ls 
     
     - name: 上传文件
       # 仅当推送以 'v' 开头的标签时执行（例如 v1.0.0）
