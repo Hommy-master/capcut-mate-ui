@@ -45,7 +45,7 @@ jobs:
 
     - name: 打包
       run: |
-        uv run pyinstaller --onefile main.py
+        uv run pyinstaller --onefile --noconsole main.py
 
     - name: 压缩文件
       run: |
